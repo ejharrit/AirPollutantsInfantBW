@@ -1,16 +1,16 @@
 #############################################################################################################################
 #############################################################################################################################
 ##                                                                                                                         ##
-##                              This file this file performs an exploratory analysis on the                                ##
+##                              This file this file performs the statistical analysis on the                               ##
 ##                                  data we cleaned in the CleanRawDatAndSave.R file                                       ##
 ##                                                                                                                         ##
 ##                                                                                                                         ##
 #############################################################################################################################
 
-
 ##### Load the necessary packages
 #####
 
+library(tidymodels)
 library(tidyverse)
 
 ##### --
@@ -26,43 +26,19 @@ hap_data <- read_csv("data/cleaned/hap_data.csv")
 #####
 
 
-##### Descriptive Statistics
-#####
-### Summary statistics of our numerical variables of interest
+##### Simple linear regression between the average measure of Lead pm2.5 and the percent of low birthweight births
+### fit the model
+lm_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(low_birthweight ~ arithmetic_mean, data = hap_data %>% filter(arithmetic_mean < 0.01))
+
+### check output
+tidy(lm_fit)
+glance(lm_fit)
+
+### plot the linear model
 hap_data %>%
-  select(arithmetic_mean, low_birthweight, very_low_birthweight) %>%
-  summary()
-
-### check if the distribution of the variables
-hap_data %>%
-  select(arithmetic_mean, low_birthweight, very_low_birthweight) %>%
-  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
-  ggplot(aes(x = value)) +
-  geom_histogram() +
-  facet_grid(rows = vars(variable), scales = "free")
-
-### check them individually for a better view
-### average PM2.5 measure
-hap_data %>%
-  ggplot(aes(x = arithmetic_mean)) +
-  geom_histogram()
-
-### percent of low weight births
-hap_data %>%
-  ggplot(aes(x = low_birthweight)) +
-  geom_histogram()
-
-### percent of very low weight births
-hap_data %>%
-  ggplot(aes(x = very_low_birthweight)) +
-  geom_histogram()
-
-##### --
-#####
-
-##### Clean our environment
-#####
-remove(hap_data)
-
-##### --
-#####
+  filter(arithmetic_mean < 0.01) %>%
+  ggplot(aes(y = low_birthweight, x = arithmetic_mean)) +
+  geom_point() +
+  stat_smooth(method = "lm", formula = y ~ x, geom = "smooth")
